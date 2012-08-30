@@ -86,6 +86,11 @@ module FFMPEG
           [ "ubuntu" ] => { "default" => [ "libx264-dev" ] },
           "default" => [ "libx264-dev" ]
         )
+      when "--enable-libfdk-aac"
+        value_for_platform(
+          [ "ubuntu" ] => { "default" => [ "fdk-aac" ] },
+          "default" => [ "fdk-aac" ]
+        )
       else
         []
       end

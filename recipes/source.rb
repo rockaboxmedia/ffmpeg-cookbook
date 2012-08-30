@@ -28,8 +28,39 @@ ffmpeg_packages.each do |pkg|
   end
 end
 
-include_recipe "x264::source"
-include_recipe "libvpx::source"
+
+# install prerequisite libs from source via Chef recipes:
+
+# not sure what this hash line does but install guides all have it
+hash_cmd = "hash ffmpeg ffplay ffprobe"
+if node[:ffmpeg][:compile_flags].include? "--enable-libx264"
+  include_recipe "x264::source"
+  hash_cmd = "hash x264 ffmpeg ffplay ffprobe"
+end
+
+if node[:ffmpeg][:compile_flags].include? "--enable-libvpx"
+  include_recipe "libvpx::source"
+end
+
+if node[:ffmpeg][:compile_flags].include? "--enable-libfdk-aac"
+  include_recipe "libfdk_aac::source"
+end
+
+
+# upgrade the packages we just built from source:
+
+flags_for_upgrade = node[:ffmpeg][:compile_flags].reject do |flag| 
+  ["--enable-libx264", "--enable-libvpx", "--enable-libfdk-aac"].include?(flag)
+end
+
+find_prerequisite_packages_by_flags(flags_for_upgrade).each do |pkg|
+  package pkg do
+    action :upgrade
+  end
+end
+
+
+# install other prerequisites:
 
 yasm_package = value_for_platform(
   [ "ubuntu" ] => { "default" => "yasm" },
@@ -40,16 +71,8 @@ package yasm_package do
   action :upgrade
 end
 
-# Filter the packages that we just built from source via their compile flag
-flags_for_upgrade = node[:ffmpeg][:compile_flags].reject do |flag| 
-  ["--enable-libx264", "--enable-libvpx"].include?(flag)
-end
 
-find_prerequisite_packages_by_flags(flags_for_upgrade).each do |pkg|
-  package pkg do
-    action :upgrade
-  end
-end
+# Install ffmpeg
 
 git "#{Chef::Config[:file_cache_path]}/ffmpeg" do
   repository node[:ffmpeg][:git_repository]
@@ -73,9 +96,11 @@ end
 
 bash "compile_ffmpeg" do
   cwd "#{Chef::Config[:file_cache_path]}/ffmpeg"
+  user "root"
   code <<-EOH
     ./configure --prefix=#{node[:ffmpeg][:prefix]} #{node[:ffmpeg][:compile_flags].join(' ')}
     make clean && make && make install
+    #{hash_cmd}
   EOH
   creates "#{node[:ffmpeg][:prefix]}/bin/ffmpeg"
 end

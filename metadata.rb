@@ -9,5 +9,6 @@ supports "ubuntu", "10.04"
 
 depends "x264", "~> 0.3.0"
 depends "libvpx", "~> 0.2.0"
+depends "libfdk_aac", "~> 0.1.0"
 depends "build-essential"
 depends "git"
