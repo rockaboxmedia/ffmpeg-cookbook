@@ -32,10 +32,8 @@ end
 # install prerequisite libs from source via Chef recipes:
 
 # not sure what this hash line does but install guides all have it
-hash_cmd = "hash ffmpeg ffplay ffprobe"
 if node[:ffmpeg][:compile_flags].include? "--enable-libx264"
   include_recipe "x264::source"
-  hash_cmd = "hash x264 ffmpeg ffplay ffprobe"
 end
 
 if node[:ffmpeg][:compile_flags].include? "--enable-libvpx"
@@ -100,7 +98,6 @@ bash "compile_ffmpeg" do
   code <<-EOH
     ./configure --prefix=#{node[:ffmpeg][:prefix]} #{node[:ffmpeg][:compile_flags].join(' ')}
     make clean && make && make install
-    #{hash_cmd}
   EOH
   creates "#{node[:ffmpeg][:prefix]}/bin/ffmpeg"
 end
